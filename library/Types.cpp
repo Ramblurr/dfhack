@@ -29,7 +29,7 @@ distribution.
 #include "Types.h"
 
 #ifndef LINUX_BUILD
-    #include <Windows.h>
+    #include <windows.h>
     #include "wdirent.h"
 #else
     #include <sys/time.h>

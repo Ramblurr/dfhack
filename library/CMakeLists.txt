@@ -192,13 +192,23 @@ STRING(REPLACE ".proto" ".pb.h" PROJECT_PROTO_HDRS "${PROJECT_PROTOS}")
 LIST(APPEND PROJECT_HEADERS ${PROJECT_PROTO_HDRS})
 LIST(APPEND PROJECT_SOURCES ${PROJECT_PROTO_SRCS})
 
-ADD_CUSTOM_COMMAND(
-    OUTPUT ${PROJECT_PROTO_SRCS} ${PROJECT_PROTO_HDRS}
-    COMMAND protoc-bin -I=${CMAKE_CURRENT_SOURCE_DIR}/proto/
-            --cpp_out=dllexport_decl=DFHACK_EXPORT:${CMAKE_CURRENT_SOURCE_DIR}/proto/
-            ${PROJECT_PROTOS}
-    DEPENDS protoc-bin ${PROJECT_PROTOS}
-)
+IF(CMAKE_CROSSCOMPILING)
+    ADD_CUSTOM_COMMAND(
+        OUTPUT ${PROJECT_PROTO_SRCS} ${PROJECT_PROTO_HDRS}
+        COMMAND ${CMAKE_SOURCE_DIR}/build/depends/protobuf/protoc -I=${CMAKE_CURRENT_SOURCE_DIR}/proto/
+                --cpp_out=dllexport_decl=DFHACK_EXPORT:${CMAKE_CURRENT_SOURCE_DIR}/proto/
+                ${PROJECT_PROTOS}
+        DEPENDS protoc-bin ${PROJECT_PROTOS}
+    )
+ELSE()
+    ADD_CUSTOM_COMMAND(
+        OUTPUT ${PROJECT_PROTO_SRCS} ${PROJECT_PROTO_HDRS}
+        COMMAND protoc-bin -I=${CMAKE_CURRENT_SOURCE_DIR}/proto/
+                --cpp_out=dllexport_decl=DFHACK_EXPORT:${CMAKE_CURRENT_SOURCE_DIR}/proto/
+                ${PROJECT_PROTOS}
+        DEPENDS protoc-bin ${PROJECT_PROTOS}
+    )
+ENDIF(CMAKE_CROSSCOMPILING)
 
 # Merge headers into sources
 SET_SOURCE_FILES_PROPERTIES( ${PROJECT_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE )
@@ -220,13 +230,13 @@ ADD_CUSTOM_COMMAND(
 
 ADD_CUSTOM_TARGET(generate_headers DEPENDS ${dfapi_SOURCE_DIR}/include/df/codegen.out.xml)
 
-IF(UNIX)
+IF(WIN32 AND NOT CMAKE_CROSSCOMPILING)
+  SET_SOURCE_FILES_PROPERTIES(DataStatics.cpp DataStaticsCtor.cpp DataStaticsFields.cpp
+                              PROPERTIES COMPILE_FLAGS "/O1 /bigobj")
+ELSE()
   # Don't produce debug info for generated stubs
   SET_SOURCE_FILES_PROPERTIES(DataStatics.cpp DataStaticsCtor.cpp DataStaticsFields.cpp
                               PROPERTIES COMPILE_FLAGS "-g0 -O1")
-ELSE(WIN32)
-  SET_SOURCE_FILES_PROPERTIES(DataStatics.cpp DataStaticsCtor.cpp DataStaticsFields.cpp
-                              PROPERTIES COMPILE_FLAGS "/O1 /bigobj")
 ENDIF()
 
 # Compilation
@@ -268,7 +278,7 @@ else()
     ENDIF()
 endif()
 
-IF(WIN32)
+IF(WIN32 AND (NOT CMAKE_CROSSCOMPILING))
     SET_TARGET_PROPERTIES(dfhack PROPERTIES COMPILE_FLAGS "/FI\"Export.h\"" )
     SET_TARGET_PROPERTIES(dfhack-client PROPERTIES COMPILE_FLAGS "/FI\"Export.h\"" )
 ELSE()
@@ -290,10 +300,10 @@ IF(APPLE)
     SET_TARGET_PROPERTIES(dfhack PROPERTIES SOVERSION 1.0.0)
 ENDIF()
 
-TARGET_LINK_LIBRARIES(dfhack protobuf-lite clsocket lua ${PROJECT_LIBS})
+TARGET_LINK_LIBRARIES(dfhack protobuf clsocket lua ${PROJECT_LIBS})
 SET_TARGET_PROPERTIES(dfhack PROPERTIES LINK_INTERFACE_LIBRARIES "")
 
-TARGET_LINK_LIBRARIES(dfhack-client protobuf-lite clsocket)
+TARGET_LINK_LIBRARIES(dfhack-client protobuf clsocket)
 TARGET_LINK_LIBRARIES(dfhack-run dfhack-client)
 
 if(APPLE)

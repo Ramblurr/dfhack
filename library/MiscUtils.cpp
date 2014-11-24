@@ -28,7 +28,7 @@ distribution.
 #include "Error.h"
 
 #ifndef LINUX_BUILD
-    #include <Windows.h>
+    #include <windows.h>
 #else
     #include <sys/time.h>
     #include <ctime>

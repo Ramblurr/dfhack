@@ -225,6 +225,17 @@ So pick either Release or RelWithDebInfo build and build the INSTALL target.
 
 The ``debug`` scripts actually do RelWithDebInfo builds.
 
+Cross-Compiling on Linux
+========================
+
+Cross-compiling DFHack on Linux for Windows is possible, and extremely easy if you're on Fedora >= 20:
+
+1. Get DFHack building natively first as you'll need the bundled protobuf 2.4 OR build and install your own version of protobuf 2.4
+   Ensuring DFHack builds natively is probably a good idea as it will ensure you have all the non-platform specific dev dependencies installed.
+2. Install the cross-compiling dev packages: mingw32-gcc-c++ mingw32-zlib mingw32-winpthreads mingw32-SDL mingw32-SDL_image
+3. mkdir build-w32 && cd build-w32
+4. mingw32-cmake .. -DCMAKE_BUILD_TYPE:string=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/home/ramblurr/src/df/win/df_win -DCMAKE_CXX_FLAGS=-std=c++11
+
 
 ===========
 Build types

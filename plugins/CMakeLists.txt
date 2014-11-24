@@ -67,14 +67,28 @@ FILE(GLOB PROJECT_PROTOS ${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto)
 STRING(REPLACE ".proto" ".pb.cc" PROJECT_PROTO_SRCS "${PROJECT_PROTOS}")
 STRING(REPLACE ".proto" ".pb.h" PROJECT_PROTO_HDRS "${PROJECT_PROTOS}")
 
+IF(CMAKE_CROSSCOMPILING)
 ADD_CUSTOM_COMMAND(
     OUTPUT ${PROJECT_PROTO_SRCS} ${PROJECT_PROTO_HDRS}
-    COMMAND protoc-bin -I=${dfhack_SOURCE_DIR}/library/proto/
-                       -I=${CMAKE_CURRENT_SOURCE_DIR}/proto/
-            --cpp_out=${CMAKE_CURRENT_SOURCE_DIR}/proto/
-            ${PROJECT_PROTOS}
+    COMMAND ${CMAKE_SOURCE_DIR}/build/depends/protobuf/protoc -I=${dfhack_SOURCE_DIR}/library/proto/
+    -I=${CMAKE_CURRENT_SOURCE_DIR}/proto/
+    --cpp_out=${CMAKE_CURRENT_SOURCE_DIR}/proto/
+    ${PROJECT_PROTOS}
     DEPENDS protoc-bin ${PROJECT_PROTOS}
-)
+    )
+ELSE()
+    ADD_CUSTOM_COMMAND(
+        OUTPUT ${PROJECT_PROTO_SRCS} ${PROJECT_PROTO_HDRS}
+        COMMAND protoc-bin -I=${dfhack_SOURCE_DIR}/library/proto/
+        -I=${CMAKE_CURRENT_SOURCE_DIR}/proto/
+        --cpp_out=${CMAKE_CURRENT_SOURCE_DIR}/proto/
+        ${PROJECT_PROTOS}
+        DEPENDS protoc-bin ${PROJECT_PROTOS}
+        )
+ENDIF(CMAKE_CROSSCOMPILING)
+
+
+
 add_custom_target(generate_proto DEPENDS ${PROJECT_PROTO_SRCS} ${PROJECT_PROTO_HDRS})
 
 SET_SOURCE_FILES_PROPERTIES( Brushes.h PROPERTIES HEADER_FILE_ONLY TRUE )

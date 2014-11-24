@@ -14,6 +14,7 @@ endif(CMAKE_CONFIGURATION_TYPES)
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(dfhack)
 
+
 if(MSVC)
 # disable C4819 code-page warning
 add_definitions( "/wd4819" )
@@ -111,6 +112,13 @@ ELSEIF(MSVC)
   # for msvc, tell it to always use 8-byte pointers to member functions to avoid confusion
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /vmg /vmm /MP")
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Od")
+ELSEIF(CMAKE_CROSSCOMPILING)
+    # gcc flags, plus static linking
+    SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -std=c++11 -g -Wall -Wno-unused-variable")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fvisibility=hidden  -mtune=generic")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden  -mtune=generic")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libstdc++")
 ENDIF()
 
 # use shared libraries for protobuf

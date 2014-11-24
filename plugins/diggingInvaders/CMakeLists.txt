@@ -23,11 +23,15 @@ IF(UNIX)
         ${PROJECT_LIBS}
     )
 # windows
-ELSE(UNIX)
+ELSEIF(MSVC)
     SET(PROJECT_LIBS
         # add any extra linux libs here
         ${PROJECT_LIBS}
         $(NOINHERIT)
+    )
+ELSE()
+SET(PROJECT_LIBS
+        ${PROJECT_LIBS}
     )
 ENDIF(UNIX)
 # this makes sure all the stuff is put in proper places and linked to dfhack

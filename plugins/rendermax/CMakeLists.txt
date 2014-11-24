@@ -16,24 +16,30 @@ SET_SOURCE_FILES_PROPERTIES( ${PROJECT_HDRS} PROPERTIES HEADER_FILE_ONLY TRUE)
 LIST(APPEND PROJECT_SRCS ${PROJECT_HDRS})
 
 
+SET(WINDOWS_LIBS
+    lua
+    dfhack-tinythread
+    ${PROJECT_LIBS}
+    )
 #linux
 IF(UNIX)
     add_definitions(-DLINUX_BUILD)
     SET(PROJECT_LIBS
         # add any extra linux libs here
-		lua
-		dfhack-tinythread
+        lua
+        dfhack-tinythread
         ${PROJECT_LIBS}
-    )
+        )
 # windows
-ELSE(UNIX)
+ELSEIF(MSVC)
     SET(PROJECT_LIBS
-        # add any extra windows libs here
-		lua
-		dfhack-tinythread
-        ${PROJECT_LIBS}
+        ${WINDOWS_LIBS}
         $(NOINHERIT)
     )
+ELSE()
+    SET(PROJECT_LIBS
+        ${WINDOWS_LIBS}
+        )
 ENDIF(UNIX)
 # this makes sure all the stuff is put in proper places and linked to dfhack
 DFHACK_PLUGIN(rendermax ${PROJECT_SRCS} LINK_LIBRARIES ${PROJECT_LIBS})
