@@ -63,8 +63,12 @@ keybinding add Ctrl-Shift-I@dwarfmode/Default dfstatus
 keybinding add Ctrl-W@dwarfmode/QueryBuilding/Some "gui/workflow"
 keybinding add Ctrl-I "gui/workflow status"
 
-# q->stockpile; p - copy & paste stockpiles
+# q->stockpile - copy & paste stockpiles
 keybinding add Alt-P copystock
+
+# q->stockpile - load and save stockpile settings out of game
+keybinding add Alt-L@dwarfmode/QueryBuilding/Some/Stockpile "gui/stockpiles -load"
+keybinding add Alt-S@dwarfmode/QueryBuilding/Some/Stockpile "gui/stockpiles -save"
 
 # q->workshop - duplicate the selected job
 keybinding add Ctrl-D job-duplicate
@@ -187,7 +191,7 @@ enable search
 enable automaterial
 
 # Other interface improvement tools
-#enable dwarfmonitor mousequery autotrade buildingplan resume zone
+enable dwarfmonitor mousequery autotrade buildingplan resume zone stockpiles
 
 # Auto Syndrome
 #autoSyndrome enable
