@@ -6,6 +6,10 @@ DFHack Future
           stockpile settings to a file. They can be used to migrate stockpile
           settings between worlds and saves.
     New scripts:
+        remove-stress [all]: set selected or all units unit to -1,000,000 stress
+          this script replaces removebadthoughts.rb
+        gui/stockpiles: an in-game interface for saving and loading stockpile
+          settings files.
     Misc improvements:
 
 DFHack 0.40.16-r1
