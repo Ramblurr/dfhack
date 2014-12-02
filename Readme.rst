@@ -306,6 +306,12 @@ twaterlvl
 ---------
 Toggle between displaying/not displaying liquid depth as numbers.
 
+stockpile settings management
+-----------------------------
+
+Save and load stockpile settings. See the gui/stockpiles for an in-game GUI to
+this plugin.
+
 copystock
 ----------
 Copies the parameters of the currently highlighted stockpile to the custom
@@ -2178,6 +2184,15 @@ gui/*
 
 Scripts that implement dialogs inserted into the main game window are put in this
 directory.
+
+* gui/stockpiles
+
+  Load and save stockpile settings from the 'q' menu.
+  Usage:
+      gui/stockpiles -save       to save the current stockpile
+      gui/stockpiles -load       to load settings into the current stockpile
+      gui/stockpiles -dir <path> set the default directory to save settings into
+      gui/stockpiles -help       to see this message
 
 binpatch
 ========
