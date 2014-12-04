@@ -5,13 +5,16 @@
 
 #include "DataFuncs.h"
 #include "LuaTools.h"
+#include "modules/Filesystem.h"
 
 #include "../uicommon.h"
 
+#include "StockpileUtils.h"
 #include "tinydir.h"
 #include "StockpileSerializer.h"
 
 
+#include "modules/Filesystem.h"
 #include "modules/Gui.h"
 
 #include "df/world.h"
@@ -23,11 +26,6 @@
 #include "df/stockpile_settings.h"
 #include "df/global_objects.h"
 #include "df/viewscreen_dwarfmodest.h"
-
-
-
-//  os
-#include <sys/stat.h>
 
 //  stl
 #include <functional>
@@ -97,10 +95,13 @@ DFhackCExport command_result plugin_init ( color_ostream &out, std::vector <Plug
             )
         );
     }
+
     std::cerr << "world: " << sizeof ( df::world ) << " ui: " << sizeof ( df::ui )
               << " b_stock: " << sizeof ( building_stockpilest ) << endl;
 
-//     ViewscreenStocks::reset();
+    if ( !Filesystem::isdir ( "stocksettings" ) )
+    {
+    }
 
     return CR_OK;
 }
@@ -115,7 +116,6 @@ DFhackCExport command_result plugin_onstatechange ( color_ostream &out, state_ch
     switch ( event )
     {
     case SC_MAP_LOADED:
-//        ViewscreenStocks::reset();
         break;
     default:
         break;
@@ -212,23 +212,6 @@ static bool loadstock_guard ( df::viewscreen *top )
     }
 }
 
-
-
-static bool file_exists ( const std::string& filename )
-{
-    struct stat buf;
-    if ( stat ( filename.c_str(), &buf ) != -1 )
-    {
-        return true;
-    }
-    return false;
-}
-
-static bool is_dfstockfile ( const std::string& filename )
-{
-    return filename.rfind ( ".dfstock" ) !=  std::string::npos;
-}
-
 //  exporting
 static command_result savestock ( color_ostream &out, vector <string> & parameters )
 {
@@ -307,7 +290,7 @@ static command_result loadstock ( color_ostream &out, vector <string> & paramete
     }
 
     if ( !is_dfstockfile ( file ) ) file += ".dfstock";
-    if ( file.empty() || !file_exists ( file ) )
+    if ( file.empty() || !Filesystem::exists ( file ) )
     {
         out.printerr ( "loadstock: a .dfstock file is required to import\n" );
         return CR_WRONG_USAGE;
@@ -324,10 +307,11 @@ static command_result loadstock ( color_ostream &out, vector <string> & paramete
     return CR_OK;
 }
 
+/**
+ * calls the lua function manage_settings() to kickoff the GUI
+ */
 bool manage_settings ( building_stockpilest *sp )
 {
-    // Find strings representing the job to order, and the trigger condition.
-    // There might be a memory leak here; C++ is odd like that.
     auto L = Lua::Core::State;
     color_ostream_proxy out ( Core::getInstance().getConsole() );
 
@@ -343,6 +327,30 @@ bool manage_settings ( building_stockpilest *sp )
     Lua::Push ( L, sp );
 
     if ( !Lua::SafeCall ( out, L, 1, 2 ) )
+        return false;
+
+    return true;
+}
+
+bool show_message_box ( const std::string & title,  const std::string & msg,  bool is_error = false )
+{
+    auto L = Lua::Core::State;
+    color_ostream_proxy out ( Core::getInstance().getConsole() );
+
+    CoreSuspendClaimer suspend;
+    Lua::StackUnwinder top ( L );
+
+    if ( !lua_checkstack ( L, 4 ) )
+        return false;
+
+    if ( !Lua::PushModulePublic ( out, L, "plugins.stockpiles", "show_message_box" ) )
+        return false;
+
+    Lua::Push ( L, title );
+    Lua::Push ( L, msg );
+    Lua::Push ( L, is_error );
+
+    if ( !Lua::SafeCall ( out, L, 3, 0 ) )
         return false;
 
     return true;
@@ -385,7 +393,6 @@ struct stockpiles_import_hook : public df::viewscreen_dwarfmodest
         int left_margin = dims.menu_x1 + 1;
         int x = left_margin;
         int y = dims.y2 - 7;
-        int y2 = dims.y2 - 8;
 
         int links = 0;
         links += sp->links.give_to_pile.size();
@@ -395,7 +402,6 @@ struct stockpiles_import_hook : public df::viewscreen_dwarfmodest
         if ( links + 12 >= y )
         {
             y += 1;
-            y2 += 1;
         }
 
         OutputHotkeyString ( x, y, "Load/Save Settings", "l", true, left_margin, COLOR_WHITE, COLOR_LIGHTRED );
@@ -448,7 +454,11 @@ static std::vector<std::string> list_dir ( const std::string &path, bool recursi
 
 static std::vector<std::string> clean_dfstock_list ( const std::string &path )
 {
-    std::vector<std::string> files = list_dir ( path );
+    if ( !Filesystem::exists ( path ) )
+    {
+        return std::vector<std::string>();
+    }
+    std::vector<std::string> files ( list_dir ( path ) );
     files.erase ( std::remove_if ( files.begin(), files.end(), [] ( const std::string &f )
     {
         return !is_dfstockfile ( f );
@@ -457,17 +467,24 @@ static std::vector<std::string> clean_dfstock_list ( const std::string &path )
     {
         return f.substr ( 0, f.find_last_of ( "." ) );
     } );
+    std::sort ( files.begin(),files.end(), CompareNoCase );
     return files;
 }
 
 static int stockpiles_list_settings ( lua_State *L )
 {
     auto path = luaL_checkstring ( L, 1 );
+    if ( !Filesystem::exists ( path ) )
+    {
+        lua_pushfstring ( L,  "stocksettings path invalid: %s",  path );
+        lua_error ( L );
+        return 0;
+    }
     color_ostream &out = *Lua::GetOutput ( L );
     tinydir_dir dir;
     if ( tinydir_open ( &dir, path ) == -1 )
     {
-        lua_pushfstring ( L,  "invalid directory: %s",  path );
+        lua_pushfstring ( L,  "stocksettings path invalid: %s",  path );
         lua_error ( L );
         return 0;
     }
@@ -479,10 +496,17 @@ static int stockpiles_list_settings ( lua_State *L )
 static void stockpiles_load ( color_ostream &out, std::string filename )
 {
     out <<  "stockpiles_load " <<  filename <<  " ";
+    if ( !Filesystem::exists ( filename ) )
+    {
+        out.printerr ( "invalid file: %s\n", filename.c_str() );
+        return;
+    }
     std::vector<std::string> params;
     params.push_back ( filename );
     command_result r = loadstock ( out, params );
     out <<  " result = "<<  r <<  endl;
+    if ( r !=  CR_OK )
+        show_message_box ( "Stockpile Settings Error", "Couldn't load. Does the folder exist?",  true );
 }
 
 
@@ -494,11 +518,14 @@ static void stockpiles_save ( color_ostream &out, std::string filename )
     params.push_back ( filename );
     command_result r = savestock ( out, params );
     out <<  " result = "<<  r <<  endl;
+    if ( r !=  CR_OK )
+        show_message_box ( "Stockpile Settings Error", "Couldn't save. Does the folder exist?",  true );
 }
 
-DFHACK_PLUGIN_LUA_FUNCTIONS {
-    DFHACK_LUA_FUNCTION(stockpiles_load),
-    DFHACK_LUA_FUNCTION(stockpiles_save),
+DFHACK_PLUGIN_LUA_FUNCTIONS
+{
+    DFHACK_LUA_FUNCTION ( stockpiles_load ),
+    DFHACK_LUA_FUNCTION ( stockpiles_save ),
     DFHACK_LUA_END
 };
 
@@ -507,6 +534,7 @@ DFHACK_PLUGIN_LUA_COMMANDS
     DFHACK_LUA_COMMAND ( stockpiles_list_settings ),
     DFHACK_LUA_END
 };
+
 
 
 
