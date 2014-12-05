@@ -23,6 +23,10 @@ function guard()
 end
 
 utils = require('utils')
+if not utils.invert then
+    utils = require('stockpile_utils')
+end
+
 validArgs = validArgs or utils.invert({
     'help',
     'load',
@@ -59,3 +63,4 @@ elseif args.dir then
 else
     usage()
 end
+
