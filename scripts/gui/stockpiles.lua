@@ -22,9 +22,9 @@ function guard()
     return true
 end
 
-utils = require('utils')
-if not utils.invert then
-    utils = require('stockpile_utils')
+local utils = require('utils')
+if utils.invert == nil then
+    utils = require('gui/stockpile_utils')
 end
 
 validArgs = validArgs or utils.invert({

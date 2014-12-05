@@ -1,4 +1,6 @@
-function invert(tab)
+local M = {}
+
+function M.invert(tab)
     local result = {}
     for k,v in pairs(tab) do
         result[v]=k
@@ -6,7 +8,7 @@ function invert(tab)
     return result
 end
 
-function processArgs(args, validArgs)
+function M.processArgs(args, validArgs)
     --[[
     standardized argument processing for scripts
     -argName value
@@ -68,4 +70,5 @@ function processArgs(args, validArgs)
     return result
 end
 
+return M
 
